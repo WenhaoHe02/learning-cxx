@@ -1,5 +1,5 @@
 ﻿#include "../exercise.h"
-
+#include<cstring>
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
 template<class T>
@@ -10,6 +10,10 @@ struct Tensor4D {
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        for (auto i = 0; i < 4; ++i) {
+            shape[i] = shape_[i];
+            size *= shape[i];
+        }
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -28,6 +32,25 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
+         unsigned int size = 1;
+        for (int i = 0; i < 4; ++i) {
+            size *= shape[i];
+        }
+        for (unsigned int i = 0; i < size; ++i) {
+            unsigned int idx[4];
+            unsigned int tmp = i;
+            for (int j = 3; j >= 0; --j) {
+                idx[j] = tmp % shape[j];
+                tmp /= shape[j];
+            }
+            unsigned int others_index = 0;
+            unsigned int stride = 1;
+            for (int j = 3; j >= 0; --j) {
+                others_index += (idx[j] % others.shape[j]) * stride;
+                stride *= others.shape[j];
+            }
+            data[i] += others.data[others_index];
+        }
         return *this;
     }
 };
@@ -101,9 +124,10 @@ int main(int argc, char **argv) {
 
         auto t0 = Tensor4D(s0, d0);
         auto t1 = Tensor4D(s1, d1);
+        auto t3 = Tensor4D(s0, d0);
         t0 += t1;
-        for (unsigned int i = 0; i < sizeof(d0) / sizeof(int); i++) {
-            ASSERT(t0.data[i] == t0.data[i] + 1, "Every element of t0 should be incremented by 1 after adding t1 to it.");
+        for (auto i = 0u; i < sizeof(d0) / sizeof(double); ++i) {
+            ASSERT(t0.data[i] == t3.data[i] + 1, "Every element of t0 should be incremented by 1 after adding t1 to it.");
         }
     }
 }
